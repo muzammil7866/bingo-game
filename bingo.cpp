@@ -1,587 +1,512 @@
-#include<iostream> //for inputs and outputs
-
-#include<cstdlib> //random numbers
-
-#include<ctime> //for new random numbers each time
-
-#include<fstream> //for file handling
-
-#include<string> //for string operations
-
-#include<windows.h> //for colors
-
-#include<iomanip> //for presenting output neatly 
+#include<iostream> //for standard input/output operations
+#include<cstdlib> //for random number generation functions
+#include<ctime> //for time functions used in random seeding
+#include<fstream> //for file handling operations
+#include<string> //for string manipulation
+#include<windows.h> //for Windows-specific functions (like color)
+#include<iomanip> //for output formatting (like setw)
+#include<conio.h> //for getch() (password masking)
 
 using namespace std;
 
-bool signup(); 
-
-bool login(); 
-
+// Function prototypes
+bool signup();
+bool login();
 void mainMenu();
-
 int gameID();
-
 void generateBoard(int board1[][5]);
-
 void displayBoard(int board1[][5], string p, int id);
-
-int toss(string p1, string p2); 
-
-void playGame(int board1[][5], int board[][5], int start, string p1, string p2, int id);
-
+int toss(string p1, string p2);
+void playGame(int board1[][5], int board2[][5], int start, string p1, string p2, int id);
 bool winCheck(int board[][5], string p, int id);
+string getPassword(); // Helper function for password input
 
-int main() //would provide the options to user for either signing up for an account or logging in through existing one
+int main()
 {
-	system("color 3");
-	bool validInput = false;
-	char choice;
+    system("color 3");
+    bool validInput = false;
+    char choice;
 
-	while (validInput != true)
-	{
-		cout << "\t\t LOGIN MENU " << endl<<endl<<endl;
-		cout << "\tPRESS 1 TO LOGIN" << endl;
-		cout << "\tpress 2 TO SIGNUP" << endl;
+    while (!validInput)
+    {
+        cout << "\t\t LOGIN MENU " << endl << endl << endl;
+        cout << "\tPRESS 1 TO LOGIN" << endl;
+        cout << "\tPRESS 2 TO SIGNUP" << endl;
+        cout << "\nENTER HERE: ";
+        cin >> choice;
+        cin.ignore(); // Clear input buffer
 
-		cout << "\nENTER HERE: ";
-
-		cin >> choice;
-
-		if (choice == '1')
-		{
-			validInput = true;
-			bool found = false;
-
-			while(found != true)
-			{
-				found = login();
-				system("pause");
-			}
-
-			mainMenu();
-		}
-
-		else if (choice == '2')
-		{
-			validInput = true;
-
-			bool valid = false;
-
-			while (valid != true)
-			{
-				valid = signup();
-				system("pause");
-			}
-
-			mainMenu();
-		}
-
-		else
-		{
-			cout << "\nINVALID INPUT!\n\n";
-			system("pause");
-			validInput = false;
-			system("cls");
-		}
-	}
-	
+        if (choice == '1')
+        {
+            bool found = false;
+            while (!found)
+            {
+                found = login();
+                if (!found)
+                {
+                    cout << "Login failed. Try again or press 0 to return to main menu: ";
+                    char retry;
+                    cin >> retry;
+                    if (retry == '0') break;
+                    cin.ignore();
+                }
+            }
+            if (found) mainMenu();
+            validInput = false;
+            system("cls");
+        }
+        else if (choice == '2')
+        {
+            bool valid = false;
+            while (!valid)
+            {
+                valid = signup();
+                if (!valid)
+                {
+                    cout << "Press any key to try again or 0 to return to main menu: ";
+                    char retry = _getch();
+                    if (retry == '0') break;
+                }
+            }
+            if (valid) mainMenu();
+            validInput = false;
+            system("cls");
+        }
+        else
+        {
+            cout << "\nINVALID INPUT!\n\n";
+            system("pause");
+            system("cls");
+        }
+    }
+    return 0;
 }
 
-bool signup() //Player would sign up using this function
+string getPassword()
 {
-	system("cls");
-	string name, pw;
-	cout << "\tEnter your name : ";
-	cin >> name;
-	cout << endl;
-	cout << "\tEnter your password : ";
-	cin >> pw;
-	cout << endl;
-
-	fstream fHand;
-	fHand.open("login.txt");
-
-	if (!fHand.is_open())
-	{
-		cout << "\nUNABLE TO CREATE ACCOUNT, TRY AGAIN!";
-	}
-
-	else
-	{
-		string namef, pwf;
-		bool valid = true;
-		while (!fHand.eof() and valid != false)
-		{
-			getline(fHand, namef);
-			getline(fHand, pwf);
-
-			if (namef == name)
-			{
-				cout << "USERNAME ALREADY TAKEN, CHOOSE SOME OTHER!" << endl;
-				valid = false;
-				return valid;
-			}
-		}
-		fHand.close();
-
-		if (valid)
-		{
-			fHand.open("login.txt", ios::app);
-
-			if (fHand.is_open())
-			{
-				fHand << endl<<name<<endl<<pw;
-
-				cout << "\nACCOUNT CREATED SUCCESSFULLY, WELCOME " << name << "!" << endl;
-			}
-
-			fHand.close();
-		}
-		return valid;
-	}
+    string password;
+    char ch;
+    while ((ch = _getch()) != 13) // 13 is Enter key
+    {
+        if (ch == 8) // Backspace
+        {
+            if (!password.empty())
+            {
+                cout << "\b \b";
+                password.pop_back();
+            }
+        }
+        else
+        {
+            cout << '*';
+            password += ch;
+        }
+    }
+    cout << endl;
+    return password;
 }
 
-bool login() //Player would log in using this function
+bool signup()
 {
-	system("cls");
+    system("cls");
+    cout << "\tEnter your name : ";
+    string name;
+    getline(cin, name);
 
-	string name, pw;
-	cout << "\tEnter your name : ";
-	cin >> name;
-	cout << endl;
-	cout << "\tEnter your password : ";
-	cin >> pw;
+    cout << "\tEnter your password : ";
+    string pw = getPassword();
 
+    fstream fHand;
+    fHand.open("login.txt", ios::in);
 
-	fstream fHand;
-	fHand.open("login.txt");
+    if (!fHand.is_open())
+    {
+        cout << "\nUNABLE TO CREATE ACCOUNT, TRY AGAIN!";
+        return false;
+    }
 
-	if (!fHand.is_open())
-	{
-		cout << "\nUNABLE TO RETRIEVE LOGIN INFO FROM DATABASE!";
-	}
+    string namef, pwf;
+    bool valid = true;
 
-	else 
-	{
-		string namef, pwf;
-		bool found = false;
-		while (!fHand.eof() and found != true)
-		{
-			getline(fHand, namef);
-			getline(fHand, pwf);
+    // Check if username exists
+    while (getline(fHand, namef) && getline(fHand, pwf))
+    {
+        if (namef == name)
+        {
+            cout << "USERNAME ALREADY TAKEN, CHOOSE ANOTHER!" << endl;
+            valid = false;
+            break;
+        }
+    }
+    fHand.close();
 
-			if (namef == name && pw == pwf)
-			{
-				cout << "\nLOGGED IN SUCCESSFULLY, WELCOME " << name << "!"<<endl<<endl;
-				found = true;
-			}
-		}
-
-		if (!found)
-		{
-			cout << "\nINVALID USERNAME OR PASSWORD, TRY AGAIN!"<<endl<<endl;
-		}
-
-		fHand.close();
-		return found;
-
-
-	}
-	
-
-
+    if (valid)
+    {
+        fHand.open("login.txt", ios::app);
+        if (fHand.is_open())
+        {
+            // Avoid adding empty lines at start of file
+            fHand.seekg(0, ios::end);
+            if (fHand.tellg() > 0)
+                fHand << endl;
+            fHand << name << endl << pw;
+            cout << "\nACCOUNT CREATED SUCCESSFULLY, WELCOME " << name << "!" << endl;
+        }
+        else
+        {
+            cout << "Failed to open file for writing!" << endl;
+            valid = false;
+        }
+        fHand.close();
+    }
+    return valid;
 }
 
-int gameID() //Random ID would be assigned to this game
+bool login()
 {
-	srand(time(0));
-	int thisGameID = rand() % 10000 + 1;
-	system("cls");
-	cout << "YOUR GAME ID IS: " << thisGameID << endl;
+    system("cls");
+    cout << "\tEnter your name : ";
+    string name;
+    getline(cin, name);
 
-	return thisGameID;
-	
+    cout << "\tEnter your password : ";
+    string pw = getPassword();
+
+    fstream fHand;
+    fHand.open("login.txt");
+
+    if (!fHand.is_open())
+    {
+        cout << "\nUNABLE TO RETRIEVE LOGIN INFO FROM DATABASE!";
+        return false;
+    }
+
+    string namef, pwf;
+    bool found = false;
+
+    while (getline(fHand, namef) && getline(fHand, pwf))
+    {
+        if (namef == name && pw == pwf)
+        {
+            cout << "\nLOGGED IN SUCCESSFULLY, WELCOME " << name << "!" << endl << endl;
+            found = true;
+            break;
+        }
+    }
+
+    if (!found)
+    {
+        cout << "\nINVALID USERNAME OR PASSWORD, TRY AGAIN!" << endl << endl;
+    }
+
+    fHand.close();
+    return found;
 }
 
-void generateBoard(int board1[][5]) //Enters the player 1 name and randomly generates its bingo grid numbers
+int gameID()
 {
-	
+    srand(static_cast<unsigned int>(time(0)));
+    int thisGameID = rand() % 9000 + 1000; // Generate 4-digit ID
+    system("cls");
+    cout << "YOUR GAME ID IS: " << thisGameID << endl;
+    return thisGameID;
+}
 
-	int temp = 0;
-	bool newRandom = true;
+void generateBoard(int board1[][5])
+{
+    // Create a pool of numbers 1-25
+    int numbers[25];
+    for (int i = 0; i < 25; i++)
+    {
+        numbers[i] = i + 1;
+    }
 
-	for (int i = 0; i < 5; i++)
-	{
-		for (int j = 0; j < 5; j++)
-		{
-			temp = 1 + rand() % 25;
-			for (int k = 0; k < 5; k++)
-			{
-				for (int l = 0; l < 5; l++)
-				{
-					if (board1[k][l] == temp)
-					{
-						newRandom = false;
-						break;
-					}
+    // Shuffle the numbers
+    for (int i = 24; i > 0; i--)
+    {
+        int j = rand() % (i + 1);
+        swap(numbers[i], numbers[j]);
+    }
 
-					else
-					{
-						newRandom = true;
-					}
-
-				}
-
-				if (!newRandom)
-				{
-					break;
-				}
-			}
-
-			if (!newRandom)
-			{
-				--j;
-			}
-
-			else
-			{
-				board1[i][j] = temp;
-			}
-		}
-	}
+    // Fill the board
+    int index = 0;
+    for (int i = 0; i < 5; i++)
+    {
+        for (int j = 0; j < 5; j++)
+        {
+            board1[i][j] = numbers[index++];
+        }
+    }
 }
 
 void displayBoard(int board1[][5], string p, int id)
 {
-	system("cls");
-	cout << "YOUR GAME ID IS: " << id << endl<<endl;
-	cout << "HERE IS YOUR BOARD " << p <<"!"<< endl << endl << endl;
+    system("cls");
+    cout << "YOUR GAME ID IS: " << id << endl << endl;
+    cout << "HERE IS YOUR BOARD " << p << "!" << endl << endl << endl;
 
-	cout << "|";
-	for (int i = 0; i < 5; i++)
-	{
-		for (int j = 0; j < 5; j++)
-		{
-			cout <<setw(3) << board1[i][j] << setw(3) << "|";
-		}
-		if (i != 4)
-			cout << endl << endl << "|";
-	}
-
-	cout<< endl << endl;
+    cout << "|";
+    for (int i = 0; i < 5; i++)
+    {
+        for (int j = 0; j < 5; j++)
+        {
+            if (board1[i][j] == 0)
+                cout << setw(3) << "X" << setw(3) << "|"; // Mark selected numbers with X
+            else
+                cout << setw(3) << board1[i][j] << setw(3) << "|";
+        }
+        if (i != 4)
+            cout << endl << endl << "|";
+    }
+    cout << endl << endl;
 }
 
-int toss(string p1, string p2) //would randomly toss b/w the both players
+int toss(string p1, string p2)
 {
-	system("cls");
-	int num=0;
-	num = rand() % 2 + 1;
+    system("cls");
+    int num = rand() % 2 + 1;
 
-	cout << "'";
-	if (num == 1)
-	{
-		cout << p1;
-	}
-
-	else
-	{
-		cout << p2;
-	}
-
-	cout<<"' WINS THE TOSS\n" << endl;
-	cout << "TAKE YOUR FIRST TURN!\n\n";
-	system("pause");
-	return num;
+    cout << "'";
+    cout << (num == 1 ? p1 : p2);
+    cout << "' WINS THE TOSS\n" << endl;
+    cout << "TAKE YOUR FIRST TURN!\n\n";
+    system("pause");
+    return num;
 }
 
-void playGame(int board1[][5], int board2[][5], int start, string p1, string p2, int id) //the proper function that would assign 0 to the number choosen by the either player and also switch their turns
+void playGame(int board1[][5], int board2[][5], int start, string p1, string p2, int id)
 {
-	bool valid = false;
-	bool found = false;
+    int currentPlayer = start;
+    bool gameOver = false;
 
-	int num = 0;
-	
-	bool endGame = false;
-	
+    while (!gameOver)
+    {
+        bool validInput = false;
+        int num = 0;
 
-	while (!(winCheck(board1, p1, id)||winCheck(board2, p2, id)))
-	{
-		if (start == 1)
-			displayBoard(board1, p1, id);
+        // Display current player's board
+        displayBoard((currentPlayer == 1) ? board1 : board2,
+            (currentPlayer == 1) ? p1 : p2, id);
 
-		else
-			displayBoard(board2, p2, id);
-		
-		cout << "\nCHOOSE YOUR NUMBER (ENTER NUMBERS ONLY B/W 1 TO 25): ";
-		cin >> num;
+        // Get valid input
+        while (!validInput)
+        {
+            cout << "\nCHOOSE YOUR NUMBER (1-25): ";
+            if (!(cin >> num))
+            {
+                cout << "INVALID INPUT! PLEASE ENTER A NUMBER.\n";
+                cin.clear();
+                cin.ignore(10000, '\n');
+                continue;
+            }
 
-		for (int i = 1; i <= 25; i++)
-		{
-			if (i == num)
-				valid = true;
-		}
+            if (num < 1 || num > 25)
+            {
+                cout << "NUMBER MUST BE BETWEEN 1 AND 25!\n";
+                continue;
+            }
 
-		if (!valid)
-		{
-			cout << "\n\nINVALID INPUT, CHOOSE AGAIN!"<<endl<<endl;
-			system("pause");
-			break;
-		}
+            validInput = true;
+        }
 
-		for (int i = 0; i < 5; i++)
-		{
-			for (int j = 0; j < 5; j++)
-			{
-				if (num == board1[i][j])
-				{
-					found = true;
-					board1[i][j] = 0;
-				}
+        // Mark the number on both boards
+        bool numberFound = false;
+        for (int i = 0; i < 5; i++)
+        {
+            for (int j = 0; j < 5; j++)
+            {
+                if (board1[i][j] == num)
+                {
+                    board1[i][j] = 0;
+                    numberFound = true;
+                }
+                if (board2[i][j] == num)
+                {
+                    board2[i][j] = 0;
+                }
+            }
+        }
 
-				if (num == board2[i][j])
-				{
-					board2[i][j] = 0;
-				}
-				
-			}
-		}
+        if (!numberFound)
+        {
+            cout << "\nNUMBER ALREADY SELECTED OR NOT FOUND! TRY AGAIN.\n";
+            system("pause");
+            continue;
+        }
 
-		if (found)
-		{
-			if (start == 1)
-			{
-				start = 2;
-				displayBoard(board1, p1, id);
-				system("pause");
-			}
-			else if (start == 2)
-			{
-				start = 1;
-				displayBoard(board2, p2, id);
-				system("pause");
-			}
-		}
+        // Check for winner
+        if (winCheck(board1, p1, id) || winCheck(board2, p2, id))
+        {
+            gameOver = true;
+            break;
+        }
 
-		if (!found)
-		{
-			cout << "\n\nSPACE ALREADY OCCUPIED, CHOOSE ANOTHER!\n\n";
-			system("pause");
-		}
-	}
-
+        // Switch player
+        currentPlayer = (currentPlayer == 1) ? 2 : 1;
+        system("cls");
+    }
 }
 
-bool winCheck(int board1[][5], string p, int id) //would check if the conditions meet for player 1 to win
+bool winCheck(int board[][5], string p, int id)
 {
-	
-	
-	int count = 0;
-	int lines = 0;
-	int score = 0;
+    int lines = 0;
 
-	//vertical
-	for (int i = 0;i < 5;i++)
-	{
-		count = 0;
+    // Check rows and columns
+    for (int i = 0; i < 5; i++)
+    {
+        bool rowComplete = true;
+        bool colComplete = true;
 
-		for (int j = 0;j < 5;j++)
-		{
-			if (board1[j][i] == 0)
-				count++;
+        for (int j = 0; j < 5; j++)
+        {
+            if (board[i][j] != 0) rowComplete = false;
+            if (board[j][i] != 0) colComplete = false;
+        }
 
-		}
-		if (count == 5)
-			lines++;
+        if (rowComplete) lines++;
+        if (colComplete) lines++;
+    }
 
-	}
+    // Check diagonals
+    bool diag1Complete = true;
+    bool diag2Complete = true;
+    for (int i = 0; i < 5; i++)
+    {
+        if (board[i][i] != 0) diag1Complete = false;
+        if (board[i][4 - i] != 0) diag2Complete = false;
+    }
+    if (diag1Complete) lines++;
+    if (diag2Complete) lines++;
 
+    if (lines >= 5)
+    {
+        int score = lines * 100;
+        ofstream fHand("playersHistory.txt", ios::app);
+        if (fHand.is_open())
+        {
+            // Check if file is empty to avoid leading newline
+            fHand.seekp(0, ios::end);
+            if (fHand.tellp() > 0)
+                fHand << endl;
+            fHand << id << endl << p << endl << score;
+            fHand.close();
+        }
 
-	//horizontal
-	for (int i = 0;i < 5;i++)
-	{
-		count = 0;
-		for (int j = 0;j < 5;j++)
-		{
-			if (board1[i][j] == 0)
-				count++;
-
-		}
-
-		if (count == 5)
-			lines++;
-		
-
-	}
-
-	//diagnol
-	count = 0;
-	for (int i = 0; i < 5; i++)
-	{
-		for (int j = 0;j < 5;j++)
-		{
-			if (i == j)
-				if (board1[i][j] == 0)
-					count++;
-
-		}
-	}
-
-	if (count == 5)
-		lines++;
-
-	count = 0;
-	for (int i = 0; i < 5; i++)
-	{
-		for (int j = 0;j < 5;j++)
-		{
-			if (i + j == 4)
-				if (board1[i][j] == 0)
-					count++;
-
-		}
-	}
-	if (count == 5)
-		lines++;
-
-	score = lines * 100;
-
-	if (lines >= 5)
-	{
-		ofstream fHand;
-		fHand.open("playersHistory.txt",ios::app);
-		if (!fHand.is_open())
-		{
-			cout << "\n\nUNFORTUNATELY COULD NOT UPDATE THE SCORES BOARD!";
-		}
-		else
-		{
-			fHand<<id<<endl<< p <<endl << score<<endl;
-			cout << "\n\nCONGRATULATIONS AND BINGO, " << p << " WON!";
-			cout << "\n\nYOU HAVE BEEN ADDED TO THE SCORES BOARD! :)"<<endl<<endl;
-		}
-
-		fHand.close();
-		return true;
-		
-	}
-	return false;
+        cout << "\n\nCONGRATULATIONS " << p << "! YOU COMPLETED " << lines << " LINES!" << endl;
+        cout << "YOUR SCORE: " << score << endl << endl;
+        system("pause");
+        return true;
+    }
+    return false;
 }
 
-void mainMenu() //would allow the user to choose between the menu options and process accoring to that selection
+void mainMenu()
 {
-	system("cls");
+    system("cls");
+    int mainChoice = 0;
 
-	bool endGame = false;
-	bool endGame1 = false;
+    while (true)
+    {
+        cout << "......................................" << endl;
+        cout << "\t      B I N G O" << endl;
+        cout << "......................................" << endl << endl;
 
-	int mainChoice = 0;
+        cout << "\t1. Play Game" << endl << endl;
+        cout << "\t2. Game History" << endl << endl;
+        cout << "\t3. How to Play" << endl << endl;
+        cout << "\t4. Exit" << endl << endl;
+        cout << "Choose your option: ";
 
-	cout << "......................................" << endl;
-	cout << "\t      B I N G O" << endl;
-	cout << "......................................" << endl;
-	cout << endl << endl;
+        if (!(cin >> mainChoice))
+        {
+            cin.clear();
+            cin.ignore(10000, '\n');
+            cout << "INVALID INPUT! PLEASE ENTER A NUMBER (1-4).\n";
+            system("pause");
+            system("cls");
+            continue;
+        }
 
-	cout << "\tPress (1) to Play Game" << endl<<endl;
-	cout << "\tPress (2) to display Game History" << endl << endl;
-	cout << "\tPress (3) to How to Play ?" << endl << endl;
-	cout << "\tPress (4) to Exit: " << endl << endl;
-	cout << "Choose your option: ";
-	cin >> mainChoice;
+        cin.ignore(); // Clear newline from buffer
 
-	while (endGame != true)
-	{
-		if (mainChoice == 1) //main gameplay
-		{
-			int id = gameID();
+        switch (mainChoice)
+        {
+        case 1: // Play Game
+        {
+            int id = gameID();
+            string p1, p2;
 
-			string p1;
-			string p2;
+            cout << "\nENTER THE NAME OF PLAYER 1: ";
+            getline(cin, p1);
+            cout << "ENTER THE NAME OF PLAYER 2: ";
+            getline(cin, p2);
 
-			cout << "\nENTER THE NAME OF PLAYER 1: ";
-			cin >> p1;
+            int board1[5][5] = { 0 };
+            int board2[5][5] = { 0 };
 
-			cout << "\nENTER THE NAME OF PLAYER 2: ";
-			cin >> p2;
+            generateBoard(board1);
+            generateBoard(board2);
 
-			int board1[5][5] = { 0 };
-			int board2[5][5] = { 0 };
+            displayBoard(board1, p1, id);
+            system("pause");
+            displayBoard(board2, p2, id);
+            system("pause");
 
-			srand(time(0));
-			generateBoard(board1);
-			generateBoard(board2);
-			
-	
-			displayBoard(board1, p1, id);
-			system("pause");
-			displayBoard(board2, p2, id);
-			system("pause");
+            int start = toss(p1, p2);
+            playGame(board1, board2, start, p1, p2, id);
 
-			int start = toss(p1,p2);
+            // After game ends, return to menu
+            system("cls");
+            break;
+        }
+        case 2: // Game History
+        {
+            system("cls");
+            ifstream fHand("playersHistory.txt");
+            if (!fHand.is_open())
+            {
+                cout << "NO GAME HISTORY AVAILABLE!\n";
+            }
+            else
+            {
+                string id, name, score;
+                cout << "\tGAME HISTORY\n\n";
+                cout << "\tGame ID\tPlayer\t\tScore\n";
+                cout << "\t-------\t-------\t\t-----\n";
 
-			playGame(board1, board2, start, p1, p2, id);
-
-			break;
-		}
-
-		else if (mainChoice == 2) //players history file would be called
-		{
-			fstream fHand;
-			fHand.open("playersHistory.txt"); //only names of the winners will be stored
-
-			if (!fHand.is_open())
-			{
-				cout << "NO PLAYER HISTORY AVAILABLE!"<<endl;
-			}
-
-			string id, name, score;
-			cout << endl;
-
-			while (!fHand.eof())
-			{
-				getline(fHand, id);
-				getline(fHand, name);
-				getline(fHand, score);
-
-				cout<<"\t"<<setw(5) << "("<<id <<") "<< setw(10) << name << " --> " << score << endl << endl;
-
-			}
-
-			fHand.close();
-			system("pause");
-			mainMenu();
-		}
-
-		else if (mainChoice == 3) //Instructions of the game would be displayed
-		{
-			system("cls");
-			cout << endl;
-			cout << "\t      INSTRUCTIONS" << endl << endl << endl;
-
-			cout << "1. There are corresponding cards to each player." << endl << endl;
-			cout << "2. Each player chooses a number in his turn from the card." << endl << endl;
-			cout << "3. Selected number will be replaced by 0 on the cards of both players." << endl << endl;
-			cout << "4. For a winner there should be five combinations that can be possible in the following ways:" << endl << endl;
-
-			cout << "\t a) 5 numbers in a column " << endl << endl;
-			cout << "\t b) 5 numbers in a row " << endl << endl;
-			cout << "\t c) 5 numbers in a diagonal " << endl << endl;
-
-			cout << "5. There will be no scenario of a draw game." << endl << endl;
-
-			cout << "\t      GOOD LUCK! " << endl << endl;
-
-			system("pause");
-				
-			mainMenu();
-			break;
-		}
-
-		else if (mainChoice == 4) //Game would end with this option
-		{
-
-			endGame = true;
-		}
-
-	}
+                while (getline(fHand, id) && getline(fHand, name) && getline(fHand, score))
+                {
+                    cout << "\t" << setw(7) << left << id
+                        << "\t" << setw(10) << left << name
+                        << "\t" << score << endl;
+                }
+                fHand.close();
+            }
+            system("pause");
+            system("cls");
+            break;
+        }
+        case 3: // How to Play
+        {
+            system("cls");
+            cout << "\n\t      INSTRUCTIONS\n\n";
+            cout << "1. Each player gets a 5x5 board with random numbers (1-25)\n\n";
+            cout << "2. Players take turns selecting numbers from their board\n\n";
+            cout << "3. Selected numbers are marked on both boards\n\n";
+            cout << "4. The first player to complete 5 lines wins:\n\n";
+            cout << "\t- Rows, columns, or diagonals count as lines\n\n";
+            cout << "\t- Each line is worth 100 points\n\n";
+            cout << "5. The player with the highest score wins!\n\n";
+            system("pause");
+            system("cls");
+            break;
+        }
+        case 4: // Exit
+            return;
+        default:
+            cout << "INVALID CHOICE! PLEASE SELECT 1-4.\n";
+            system("pause");
+            system("cls");
+        }
+    }
 }
